@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Art Portfolio</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent: #ffffff;
+            --border: rgba(255, 255, 255, 0.1);
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .header-content {
+            height: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            letter-spacing: -0.025em;
+        }
+
+        /* Navigation */
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+            font-family: inherit;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            color: var(--text-primary);
+        }
+
+        .admin-toggle {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .admin-toggle:hover {
+            background: var(--card-bg);
+        }
+
+        /* Main Content */
+        main {
+            padding-top: 6rem;
+            padding-bottom: 4rem;
+        }
+
+        /* Admin Panel */
+        #admin-panel {
+            display: none;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        #admin-panel.visible {
+            display: block;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .admin-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .file-input-wrapper {
+            border: 1px dashed var(--border);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .file-input-wrapper:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        button.submit-btn {
+            width: 100%;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button.submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 3/4;
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-4px);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 1.5rem;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            opacity: 1;
+        }
+
+        /* Posts Feed */
+        .posts-feed {
+            max-width: 700px;
+            margin: 0 auto;
+            display: none;
+        }
+
+        .posts-feed.visible {
+            display: block;
+        }
+
+        .post-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            overflow: hidden;
+            margin-bottom: 3rem;
+        }
+
+        .post-image {
+            width: 100%;
+            max-height: 500px;
+            object-fit: contain;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .post-content {
+            padding: 2rem;
+        }
+
+        .post-title {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .post-text {
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+        }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .loading { opacity: 0.5; pointer-events: none; }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container header-content">
+            <h1>Portfolio.</h1>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <nav class="nav-links">
+                    <button class="nav-btn active" onclick="switchTab('gallery', this)">Galeria</button>
+                    <button class="nav-btn" onclick="switchTab('posts', this)">Posts</button>
+                </nav>
+                <button class="admin-toggle" onclick="toggleAdmin()" title="Admin Panel">
+                    +
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <!-- Admin Panel -->
+        <div id="admin-panel">
+            <h2 style="margin-bottom: 1.5rem; font-weight: 500;">Painel Admin</h2>
+            <div class="admin-grid">
+                <!-- Upload Form -->
+                <form id="upload-form" onsubmit="handleUpload(event)">
+                    <h3 style="font-size: 0.875rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 1rem; letter-spacing: 0.05em;">Novo Desenho</h3>
+                    
+                    <div class="form-group">
+                        <div class="file-input-wrapper" onclick="document.getElementById('file-input').click()">
+                            <input type="file" id="file-input" accept="image/*" style="display: none" onchange="updateFileName(this)">
+                            <span id="file-label" style="font-size: 0.875rem; color: var(--text-secondary);">Clique para selecionar imagem</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="text" id="title-input" placeholder="Título da obra" required>
+                    </div>
+
+                    <div class="form-group">
+                        <textarea id="desc-input" placeholder="Descrição técnica..." rows="3"></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Upload Desenho</button>
+                </form>
+
+                <!-- Post Form -->
+                <form id="post-form" onsubmit="handlePost(event)">
+                    <h3 style="font-size: 0.875rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 1rem; letter-spacing: 0.05em;">Novo Post</h3>
+                    
+                    <div class="form-group">
+                        <select id="drawing-select" required>
+                            <option value="">Selecione uma obra...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <textarea id="post-content" placeholder="Escreva seu post aqui..." rows="6" required></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn" style="background: rgba(255,255,255,0.1); color: white;">Publicar Post</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loader" class="spinner"></div>
+
+        <!-- Gallery View -->
+        <div id="gallery-view" class="gallery-grid">
+            <!-- Items injected by JS -->
+        </div>
+
+        <!-- Posts View -->
+        <div id="posts-view" class="posts-feed">
+            <!-- Items injected by JS -->
+        </div>
+
+    </main>
+
+    <script>
+        // --- CONFIGURAÇÃO SUPABASE ---
+        const SUPABASE_URL = 'https://dgxrmlprthgwoylcvddf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRneHJtbHBydGhnd295bGN2ZGRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3NzA1OTMsImV4cCI6MjA4NzM0NjU5M30.MxiE93rKoziawKkny6aUEeyVauumym9RvKQDaOtbhwg';
+
+        // Inicialização do Cliente (nome 'db' evita conflito com window.supabase do CDN)
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Para evitar conflitos, vamos usar 'db' consistentemente e criar um alias global
+        window.supabase = db;
+
+        // --- ESTADO ---
+        let drawings = [];
+        let posts = [];
+
+        // --- INICIALIZAÇÃO ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            setupRealtime();
+        });
+
+        // --- REALTIME ---
+        function setupRealtime() {
+            // Escuta inserções na tabela 'galeria' e atualiza em tempo real
+            supabase
+                .channel('galeria-realtime')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'galeria' }, () => {
+                    fetchData();
+                })
+                .subscribe();
+
+            // Escuta inserções na tabela 'posts' e atualiza em tempo real
+            supabase
+                .channel('posts-realtime')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => {
+                    fetchData();
+                })
+                .subscribe();
+        }
+
+        // --- FUNÇÕES DE DADOS ---
+        async function fetchData() {
+            showLoader(true);
+            try {
+                // Buscar Desenhos
+                const { data: galleryData, error: galleryError } = await supabase
+                    .from('galeria')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (galleryError) throw galleryError;
+                drawings = galleryData || [];
+
+                // Buscar Posts
+                const { data: postsData, error: postsError } = await supabase
+                    .from('posts')
+                    .select('*, galeria(*)')
+                    .order('id', { ascending: false });
+
+                if (postsError) throw postsError;
+                posts = postsData || [];
+
+                renderGallery();
+                renderPosts();
+                updateSelectOptions();
+
+            } catch (error) {
+                console.error('Erro ao buscar dados:', error);
+                // Se falhar (ex: credenciais erradas), mostra msg amigável
+                if (error.message && error.message.includes('URL')) {
+                    document.getElementById('gallery-view').innerHTML = 
+                        '<p style="grid-column: 1/-1; text-align: center; color: #ef4444;">Configure as credenciais do Supabase no código (linhas 275-276).</p>';
+                }
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        // --- RENDERIZAÇÃO ---
+        function renderGallery() {
+            const container = document.getElementById('gallery-view');
+            container.innerHTML = '';
+
+            if (drawings.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">Nenhum desenho na galeria.</p>';
+                return;
+            }
+
+            drawings.forEach(drawing => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.innerHTML = `
+                    <img src="${drawing.image_url}" alt="${drawing.titulo}" loading="lazy">
+                    <div class="gallery-overlay">
+                        <h3 style="font-size: 1.1rem; font-weight: 500; margin-bottom: 0.25rem;">${drawing.titulo}</h3>
+                        <p style="font-size: 0.875rem; color: #d1d5db;">${drawing.descricao || ''}</p>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderPosts() {
+            const container = document.getElementById('posts-view');
+            container.innerHTML = '';
+
+            if (posts.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Nenhum post publicado.</p>';
+                return;
+            }
+
+            posts.forEach(post => {
+                const article = document.createElement('article');
+                article.className = 'post-card';
+                
+                let imageHtml = '';
+                if (post.galeria) {
+                    imageHtml = `<img src="${post.galeria.image_url}" class="post-image" alt="${post.galeria.titulo}">`;
+                }
+
+                article.innerHTML = `
+                    ${imageHtml}
+                    <div class="post-content">
+                        ${post.galeria ? `<h3 class="post-title">${post.galeria.titulo}</h3>` : ''}
+                        <div class="post-text">${post.conteudo}</div>
+                    </div>
+                `;
+                container.appendChild(article);
+            });
+        }
+
+        function updateSelectOptions() {
+            const select = document.getElementById('drawing-select');
+            select.innerHTML = '<option value="">Selecione uma obra...</option>';
+            drawings.forEach(d => {
+                const option = document.createElement('option');
+                option.value = d.id;
+                option.textContent = d.titulo;
+                select.appendChild(option);
+            });
+        }
+
+        // --- AÇÕES DO USUÁRIO ---
+        async function handleUpload(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+
+            const fileInput = document.getElementById('file-input');
+            const title = document.getElementById('title-input').value;
+            const desc = document.getElementById('desc-input').value;
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Selecione uma imagem!');
+                resetBtn(btn, originalText);
+                return;
+            }
+
+            try {
+                // 1. Upload Storage
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}.${fileExt}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('desenhos')
+                    .upload(fileName, file);
+
+                if (uploadError) throw uploadError;
+
+                // 2. Get URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('desenhos')
+                    .getPublicUrl(fileName);
+
+                // 3. Insert DB
+                const { error: dbError } = await supabase
+                    .from('galeria')
+                    .insert([{ titulo: title, descricao: desc, image_url: publicUrl }]);
+
+                if (dbError) throw dbError;
+
+                // Reset
+                e.target.reset();
+                document.getElementById('file-label').textContent = 'Clique para selecionar imagem';
+                alert('Sucesso!');
+                fetchData();
+
+            } catch (error) {
+                console.error(error);
+                alert('Erro no upload: ' + error.message);
+            } finally {
+                resetBtn(btn, originalText);
+            }
+        }
+
+        async function handlePost(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Publicando...';
+
+            const drawingId = document.getElementById('drawing-select').value;
+            const content = document.getElementById('post-content').value;
+
+            try {
+                const { error } = await supabase
+                    .from('posts')
+                    .insert([{ desenho_id: drawingId, conteudo: content }]);
+
+                if (error) throw error;
+
+                e.target.reset();
+                alert('Post publicado!');
+                fetchData();
+                switchTab('posts'); // Vai para a aba de posts
+
+            } catch (error) {
+                console.error(error);
+                alert('Erro ao publicar: ' + error.message);
+            } finally {
+                resetBtn(btn, originalText);
+            }
+        }
+
+        // --- UI HELPERS ---
+        function switchTab(tab, btnEl) {
+            // Update buttons — btnEl pode ser null quando chamado programaticamente
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            if (btnEl) {
+                btnEl.classList.add('active');
+            } else {
+                // Chamada programática: ativa o botão correto pelo texto
+                document.querySelectorAll('.nav-btn').forEach(b => {
+                    if ((tab === 'gallery' && b.textContent.trim() === 'Galeria') ||
+                        (tab === 'posts'   && b.textContent.trim() === 'Posts')) {
+                        b.classList.add('active');
+                    }
+                });
+            }
+
+            // Update views
+            const galleryView = document.getElementById('gallery-view');
+            const postsView   = document.getElementById('posts-view');
+
+            if (tab === 'gallery') {
+                galleryView.classList.remove('hidden');
+                galleryView.style.display = 'grid';
+                postsView.classList.remove('visible');
+                postsView.style.display = 'none';
+            } else {
+                galleryView.classList.add('hidden');
+                galleryView.style.display = 'none';
+                postsView.classList.add('visible');
+                postsView.style.display = 'block';
+            }
+        }
+
+        function toggleAdmin() {
+            const panel = document.getElementById('admin-panel');
+            const btn = document.querySelector('.admin-toggle');
+            
+            if (panel.classList.contains('visible')) {
+                panel.classList.remove('visible');
+                btn.style.transform = 'rotate(0deg)';
+                btn.style.background = 'transparent';
+            } else {
+                panel.classList.add('visible');
+                btn.style.transform = 'rotate(45deg)';
+                btn.style.background = 'var(--card-bg)';
+            }
+        }
+
+        function updateFileName(input) {
+            const label = document.getElementById('file-label');
+            if (input.files && input.files[0]) {
+                label.textContent = input.files[0].name;
+                label.style.color = 'var(--text-primary)';
+            }
+        }
+
+        function showLoader(show) {
+            const loader = document.getElementById('loader');
+            loader.style.display = show ? 'block' : 'none';
+        }
+
+        function resetBtn(btn, text) {
+            btn.disabled = false;
+            btn.textContent = text;
+        }
+    </script>
+</body>
+</html>
+
